@@ -2,7 +2,7 @@ PRJ = ./software
 DEV = arduino:avr
 BRD = pro
 PORT = /dev/ttyUSB0 
-BAUD = 115200 
+BAUD = 9600 
 
 compile: 
 	arduino-cli core install $(DEV)

@@ -8,7 +8,7 @@ Settings::Settings() {
 }
 
 bool Settings::loadSaved(unsigned int address) {
-    EEPROM.get(address,values);
+    EEPROM.get(address,&values);
     if (values.errorCheck!=SETTINGS_CHECK_CHAR) {
         loadDefault();
         return false;;
@@ -17,8 +17,8 @@ bool Settings::loadSaved(unsigned int address) {
 }
 
 void Settings::store(unsigned int address) {
-    if (values.errorCheck!=SETTINGS_CHECK_CHAR) {
-        EEPROM.put(address,values);
+    if (values.errorCheck==SETTINGS_CHECK_CHAR) {
+        EEPROM.put(address,&values);
     }
 }
 

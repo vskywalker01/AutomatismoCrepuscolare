@@ -13,7 +13,7 @@
 #define LCD_FORMAT_ROWS           2
 #define LCD_FORMAT_COLS           20
 #define LCD_MAX_COLS              38
-#define SETTINGS_ADDRESS          0
+#define SETTINGS_ADDRESS          10
 
 #define PHOTO_PIN                 A0
 #define PHOTO_BASEVALUE           0
@@ -32,8 +32,8 @@
 #define BUZZER_FREQUENCY          3500
 
 #define DISPLAY_REFRESH_RATE      100000
-#define BUTTON_RESOLUTION         200000
-#define BUTTON_FAST_RESOLUTION    20000
+#define BUTTON_RESOLUTION         2000000
+#define BUTTON_FAST_RESOLUTION    100000
 
 #define BUTTON_PRESSED_TONE       200
 #define ALARM_TONE                5000
@@ -79,7 +79,7 @@ void setup() {
   digitalWrite(RELAY2_PIN, true);
   digitalWrite(RELAY3_PIN, true);
   digitalWrite(RELAY4_PIN, true);
-
+  lastButton=NONE;
   currentView=GENERAL;
   blinkStatus=false;
   secondCounter=1000000/DISPLAY_REFRESH_RATE;
@@ -149,28 +149,19 @@ void update() {
 
   button detectedButton=NONE;
   button pressedButton=NONE;
-  if (!digitalRead(PLUS_BUTTON)) detectedButton=PLUS;
-  if (!digitalRead(MINUS_BUTTON)) detectedButton=MINUS;
-  if (!digitalRead(SELECT_BUTTON)) detectedButton=CONTROL;
-
-  if (buttonCounter>0) {
-    pressedButton=NONE;
-    buttonCounter--;
+  if (!digitalRead(PLUS_BUTTON)) pressedButton=PLUS;
+  if (!digitalRead(MINUS_BUTTON)) pressedButton=MINUS;
+  if (!digitalRead(SELECT_BUTTON)) pressedButton=CONTROL;
+  
+  if (buttonCounter==0 || pressedButton != lastButton) {
+    if (lastButton!=pressedButton) buttonCounter=BUTTON_RESOLUTION/DISPLAY_REFRESH_RATE;
+    else buttonCounter=BUTTON_FAST_RESOLUTION/DISPLAY_REFRESH_RATE;
+    lastButton=pressedButton;
   } else {
-    if (detectedButton!=NONE) {
-      pressedButton=detectedButton;
-      
-      if (lastButton==detectedButton && detectedButton != CONTROL) {
-        buttonCounter=BUTTON_FAST_RESOLUTION/DISPLAY_REFRESH_RATE;
-      } else {
-        buttonCounter=BUTTON_RESOLUTION/DISPLAY_REFRESH_RATE;
-      }
-      
-      lastButton=detectedButton;
-    }
+    pressedButton=NONE; 
+    buttonCounter--;
   }
-  
-  
+   
   switch (currentView) {
     case GENERAL:
       if (pressedButton==PLUS) currentSubView++;
@@ -207,7 +198,7 @@ void update() {
         }
 
       } else {
-        if (currentSubView>=LOADS_NUMBER) {
+        if (currentSubView>LOADS_NUMBER) {
           currentSubView=0;
           currentView=GENERAL;
         } else {
@@ -242,12 +233,12 @@ void update() {
       switch (pressedButton) {
         case PLUS:
           if (currentSubView==0) currentSubView=1;
-          else if (currentSubView<LOADS_NUMBER) options->setMask((currentSubView-1),true);
+          else if (currentSubView<=LOADS_NUMBER) options->setMask((currentSubView-1),true);
         break;
 
         case MINUS:
           if (currentSubView==0) currentSubView=1;
-          else if (currentSubView<LOADS_NUMBER) options->setMask((currentSubView-1),false);
+          else if (currentSubView<=LOADS_NUMBER) options->setMask((currentSubView-1),false);
         break;
 
         case CONTROL:
@@ -284,12 +275,12 @@ void update() {
       switch (pressedButton) {
         case PLUS:
           if (currentSubView==0) currentSubView=1;
-          else if (currentSubView<LOADS_NUMBER) options->setPower((currentSubView-1),options->getPower(currentSubView-1)+1);
+          else if (currentSubView<=LOADS_NUMBER) options->setPower((currentSubView-1),options->getPower(currentSubView-1)+1);
         break;
 
         case MINUS:
           if (currentSubView==0) currentSubView=1;
-          else if (currentSubView<LOADS_NUMBER) options->setPower((currentSubView-1),options->getPower(currentSubView-1)-1);
+          else if (currentSubView<=LOADS_NUMBER) options->setPower((currentSubView-1),options->getPower(currentSubView-1)-1);
         break;
 
         case CONTROL:
