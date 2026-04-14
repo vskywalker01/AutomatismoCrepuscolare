@@ -16,6 +16,9 @@ bool Settings::loadSaved(unsigned int address) {
     }
     checksum += (uint32_t) values.defaultTimerOff; 
     checksum += (uint32_t) values.defaultTimerOn; 
+    checksum += (uint32_t) values.alpha; 
+    checksum += (uint32_t) values.beta;
+
     if (checksum != values.checksum) {
         loadDefault();
         return false; 
@@ -31,7 +34,9 @@ void Settings::store(unsigned int address) {
     }
     checksum += (uint32_t) values.defaultTimerOff; 
     checksum += (uint32_t) values.defaultTimerOn; 
-    
+    checksum += (uint32_t) values.alpha; 
+    checksum += (uint32_t) values.beta;
+
     values.checksum=checksum;
     EEPROM.put(address,values);
 }
@@ -43,6 +48,8 @@ void Settings::loadDefault() {
     }
     values.defaultTimerOff=DEFAULT_TIMEROFF;
     values.defaultTimerOn=DEFAULT_TIMERON;
+    values.alpha=0;
+    values.beta=0;
 }
 
 void Settings::setPower(unsigned int load,unsigned int value) {
@@ -82,4 +89,17 @@ bool Settings::getMask(unsigned int load) {
         return values.masks[load];
     }
     return false;
+}
+
+void Settings::setAlpha(float alpha) {
+    if (alpha>=0) values.alpha=alpha; 
+}
+void Settings::setBeta(float beta) {
+    if (beta>=0) values.beta=beta;
+}
+float Settings::getAlpha() {
+    return values.alpha;
+}
+float Settings::getBeta() {
+    return values.beta;
 }

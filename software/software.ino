@@ -16,8 +16,8 @@
 #define SETTINGS_ADDRESS          10
 
 #define PHOTO_PIN                 A0
-#define PHOTO_BASEVALUE           0
-#define PHOTO_INCREMENT           10
+#define SENSOR_ALPHA_DELTA        0.1
+#define SENSOR_BETA_DELTA         0.1
 
 #define SELECT_BUTTON             2
 #define MINUS_BUTTON              8
@@ -81,7 +81,6 @@ void setup() {
 
   screen=new Display(LCD_SHIFT_EN, LCD_SHIFT_D7, LCD_SHIFT_SER, LCD_SHIFT_CLK,LCD_FORMAT_ROWS,LCD_FORMAT_COLS,LCD_MAX_COLS);
   options=new Settings();
-  light=new Sensor(PHOTO_PIN,PHOTO_BASEVALUE,PHOTO_INCREMENT);
   counters=new Relays(4);
   
   if(!options->loadSaved(SETTINGS_ADDRESS)) {
@@ -94,7 +93,8 @@ void setup() {
     noInterrupts();
     screen->clear();
   }
-  
+  light=new Sensor(PHOTO_PIN,options->getAlpha(),options->getBeta());
+ 
   Timer1.initialize((DISPLAY_REFRESH_RATE/2));
   Timer1.attachInterrupt(update);
 
@@ -249,14 +249,14 @@ void update() {
           if (currentSubView>0) {
             if (currentSubView>=LOADS_NUMBER) {
               currentSubView=0;
-              currentView=SETTINGS_TIMERON;
+              currentView=SETTINGS_SENSOR;
             }
             else {
               currentSubView++;
             }
           } else {
             currentSubView=0;
-            currentView=SETTINGS_TIMERON;
+            currentView=SETTINGS_SENSOR;
           }
         break;
       }
@@ -358,18 +358,40 @@ void update() {
     case SETTINGS_SENSOR:
       switch (pressedButton) {
         case PLUS:
-          if (currentSubView==0) currentSubView=1;
-          else if (currentSubView<=LOADS_NUMBER) options->setMask((currentSubView-1),true);
+          switch (currentSubView) {  
+            case 0: 
+                currentSubView=1; 
+            break; 
+            case 1: 
+                options->setAlpha(options->getAlpha()+SENSOR_ALPHA_DELTA);
+            break;
+            case 2: 
+                options->setAlpha(options->getBeta()+SENSOR_BETA_DELTA);
+            default: 
+                currentSubView=0;
+            break;
+          }
         break;
 
         case MINUS:
-          if (currentSubView==0) currentSubView=1;
-          else if (currentSubView<=LOADS_NUMBER) options->setMask((currentSubView-1),false);
+          switch (currentSubView) {  
+            case 0: 
+                currentSubView=1; 
+            break; 
+            case 1: 
+                options->setAlpha(options->getAlpha()-SENSOR_ALPHA_DELTA);
+            break;
+            case 2: 
+                options->setAlpha(options->getBeta()-SENSOR_BETA_DELTA);
+            default: 
+                currentSubView=0;
+            break;
+          }  
         break;
 
         case CONTROL:
           if (currentSubView>0) {
-            if (currentSubView>=LOADS_NUMBER) {
+            if (currentSubView>=2) {
               currentSubView=0;
               currentView=SETTINGS_TIMERON;
             }
@@ -384,29 +406,20 @@ void update() {
       }
       switch (currentSubView) {
         case 0: 
-          screen->write(0,0,"Sensore             ");
+          screen->write(0,0,"Calibrazione sensore");
           screen->write(1,0,"                    ");
         break; 
 
         case 1:
           screen->write(0,0,"Alpha               ");
           screen->write(1,0,String((char) 0b00111110)+"                   ");
-          if (options->getMask(currentSubView-1)) {
-            screen->write(1,2,String(settings.getAlpha()));
-          } else {
-            screen->write(1,2,String("OFF "));
-          }
-
+          screen->write(1,2,String(options->getAlpha()));
         break; 
 
         case 2: 
           screen->write(0,0,"Beta                ");
           screen->write(1,0,String((char) 0b00111110)+"                   ");
-          if (options->getMask(currentSubView-1)) {
-            screen->write(1,2,String("ON "));
-          } else {
-            screen->write(1,2,String("OFF "));
-          }
+          screen->write(1,2,String(options->getBeta()));
         break;
 
         default: 
