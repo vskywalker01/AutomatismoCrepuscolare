@@ -37,7 +37,7 @@ void Relays::updateStatus() {
     for (unsigned int r=0;r<number;r++) {
         switch (status[r]) {
             case START:
-                if (counters[r]>0) {
+                if (counters[r]>1) {
                     counters[r]--;
                 } else {
                     status[r]=ON;
@@ -45,7 +45,7 @@ void Relays::updateStatus() {
                 }
             break;
             case STOP:
-                if (counters[r]>0) {
+                if (counters[r]>1) {
                     counters[r]--;
                 } else {
                     status[r]=OFF;

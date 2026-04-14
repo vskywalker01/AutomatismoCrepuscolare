@@ -23,8 +23,8 @@
 #define MINUS_BUTTON              8
 #define PLUS_BUTTON               9
 
-#define RELAY1_PIN                0
-#define RELAY2_PIN                1
+#define RELAY1_PIN                1
+#define RELAY2_PIN                0
 #define RELAY3_PIN                11  
 #define RELAY4_PIN                10
 
@@ -38,7 +38,8 @@ typedef enum {
   SETTINGS_POWER,
   SETTINGS_MASK,
   SETTINGS_TIMERON,
-  SETTINGS_TIMEROFF
+  SETTINGS_TIMEROFF,
+  SETTINGS_SENSOR
 } view;
 
 Display* screen;
@@ -354,7 +355,65 @@ void update() {
       screen->write(1,2,String(options->getTimerOff())+"    ");
     
     break;
-    
+    case SETTINGS_SENSOR:
+      switch (pressedButton) {
+        case PLUS:
+          if (currentSubView==0) currentSubView=1;
+          else if (currentSubView<=LOADS_NUMBER) options->setMask((currentSubView-1),true);
+        break;
+
+        case MINUS:
+          if (currentSubView==0) currentSubView=1;
+          else if (currentSubView<=LOADS_NUMBER) options->setMask((currentSubView-1),false);
+        break;
+
+        case CONTROL:
+          if (currentSubView>0) {
+            if (currentSubView>=LOADS_NUMBER) {
+              currentSubView=0;
+              currentView=SETTINGS_TIMERON;
+            }
+            else {
+              currentSubView++;
+            }
+          } else {
+            currentSubView=0;
+            currentView=SETTINGS_TIMERON;
+          }
+        break;
+      }
+      switch (currentSubView) {
+        case 0: 
+          screen->write(0,0,"Sensore             ");
+          screen->write(1,0,"                    ");
+        break; 
+
+        case 1:
+          screen->write(0,0,"Alpha               ");
+          screen->write(1,0,String((char) 0b00111110)+"                   ");
+          if (options->getMask(currentSubView-1)) {
+            screen->write(1,2,String(settings.getAlpha()));
+          } else {
+            screen->write(1,2,String("OFF "));
+          }
+
+        break; 
+
+        case 2: 
+          screen->write(0,0,"Beta                ");
+          screen->write(1,0,String((char) 0b00111110)+"                   ");
+          if (options->getMask(currentSubView-1)) {
+            screen->write(1,2,String("ON "));
+          } else {
+            screen->write(1,2,String("OFF "));
+          }
+        break;
+
+        default: 
+        break;
+      }
+    break;
+
     default:
       currentView=GENERAL;
     break;

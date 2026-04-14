@@ -1,12 +1,26 @@
 #include "Arduino.h"
 #include "Sensor.h"
 
-Sensor::Sensor(int pin, unsigned int base, unsigned int increment) {
+Sensor::Sensor(int pin, float alpha, float beta) {
     sensorPin=pin;
-    c=increment;
-    b=base;
+    a=alpha;
+    b=beta;
 }
 
 unsigned int Sensor::getCurrentPower() {
-    return b+(digitalRead(sensorPin)*c);
+    return (unsigned int) (a*pow(digitalRead(sensorPin),b));
+}
+
+float Sensor::getAlpha() {
+    return a; 
+}
+
+float Sensor::getBeta() {
+    return b;
+} 
+void Sensor::setAlpha(float alpha) {
+    a=alpha; 
+}
+void Sensor::setBeta(float beta) {
+    b=beta;
 }

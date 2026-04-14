@@ -26,7 +26,6 @@ typedef struct SettingsValues{
 class Settings {
     private: 
     SettingsValues values;
-    SettingsValues pendingValues; 
     public:
     Settings();
     

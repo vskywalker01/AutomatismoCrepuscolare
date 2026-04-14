@@ -9,7 +9,6 @@ Settings::Settings() {
 
 bool Settings::loadSaved(unsigned int address) {  
     EEPROM.get(address,values);
-    EEPROM.get(address,pendingValues);
     uint16_t checksum = 0;
     for (unsigned int i=0;i<LOADS_NUMBER;i++) {
         checksum += (uint32_t) values.powers[i];
@@ -25,13 +24,6 @@ bool Settings::loadSaved(unsigned int address) {
 }
 
 void Settings::store(unsigned int address) {
-    for (unsigned int i=0;i<LOADS_NUMBER;i++) {
-        values.powers[i]=pendingValues.powers[i];
-        values.masks[i]=pendingValues.masks[i];
-    }
-    values.defaultTimerOff=pendingValues.defaultTimerOff; 
-    values.defaultTimerOn=pendingValues.defaultTimerOn; 
-
     uint16_t checksum = 0;
     for (unsigned int i=0;i<LOADS_NUMBER;i++) {
         checksum += (uint32_t) values.powers[i];
@@ -41,7 +33,6 @@ void Settings::store(unsigned int address) {
     checksum += (uint32_t) values.defaultTimerOn; 
     
     values.checksum=checksum;
-    pendingValues.checksum=checksum;
     EEPROM.put(address,values);
 }
 
@@ -49,27 +40,22 @@ void Settings::loadDefault() {
     for (unsigned int n=0;n<LOADS_NUMBER;n++) {
       values.powers[n]=DEFAULT_POWER;
       values.masks[n]=true;
-
-      pendingValues.powers[n]=DEFAULT_POWER; 
-      pendingValues.masks[n]=false; 
     }
     values.defaultTimerOff=DEFAULT_TIMEROFF;
     values.defaultTimerOn=DEFAULT_TIMERON;
-    pendingValues.defaultTimerOff=DEFAULT_TIMEROFF;
-    pendingValues.defaultTimerOn=DEFAULT_TIMERON;
 }
 
 void Settings::setPower(unsigned int load,unsigned int value) {
     if (value<MAX_SETTINGS_BOUND && load<LOADS_NUMBER) {
-        pendingValues.powers[load]=value;
+        values.powers[load]=value;
     }
 }
 
 void Settings::setTimerOn(unsigned int value) {
-    pendingValues.defaultTimerOn=value;
+    values.defaultTimerOn=value;
 }
 void Settings::setTimerOff(unsigned int value) {
-    pendingValues.defaultTimerOff=value;
+    values.defaultTimerOff=value;
 }
 
 unsigned int Settings::getPower(unsigned int load) {
@@ -87,7 +73,7 @@ unsigned int Settings::getTimerOff() {
 
 void Settings::setMask(unsigned int load,bool value) {
     if (load<LOADS_NUMBER) {
-        pendingValues.masks[load]=value;
+        values.masks[load]=value;
     }
 }
 

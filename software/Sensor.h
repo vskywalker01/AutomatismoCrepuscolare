@@ -2,16 +2,21 @@
 #define __SENSOR_H__
 
 #include "Arduino.h"
+#include <math.h>
 
 class Sensor {
     private:
     unsigned int sensorPin;
-    unsigned int b;
-    unsigned int c;
+    float a;
+    float b;
 
     public:
-    Sensor(int pin,unsigned int base, unsigned int increment);
+    Sensor(int pin,float alpha,float beta);
     unsigned int getCurrentPower();
+    float getAlpha();
+    float getBeta(); 
+    void setAlpha(float alpha);
+    void setBeta(float beta);
 };
 
 #endif 
