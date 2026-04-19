@@ -7,36 +7,96 @@
 
 #include <TimerOne.h>
 
+/*
+-- Overview --
+An inverter with some photovoltaic panels is connected with two devices: an electic pump and a boiler. The goal is to create a system that, 
+in base of the power that the system can generate from the sun, turns on and off the two devices.
+Because cloud can create temporary shades on the panels, the system should also not consider occlusions for short amount of times (like 10 minutes). Therefore, a timer should be setted in order to activate or deactivate the relays. 
+
+-- Hardware used --
+- An arduino pro mini 
+- one 16x2 LCD Display
+- three buttons 
+- one photoresistor 
+- four relays controlled 
+
+-- User interface --
+The program include an interface that gives the user control over the settings and the current status of all four relays:
+  - The main menu gives the status of the relays (ON/OFF) with the current power (estimated) that is available to all four devices. 
+
+  *********************
+  * luce: xxxx  xxxxw *
+  * on  off  off  on  *
+  *********************
+
+  - A settings menu gives the user control over multipe features like the power used by the loads, output masks, or activation/deactivatiopn timers. 
+  
+  *********************
+  * timer attivazione *
+  * > 12s             *
+  *********************
+
+  - A details menu gives more information about the current status of each single relay 
+
+  **********************
+  * carico 1           *
+  * attivazione in xxs *
+  **********************
+
+-- relay control system -- 
+The four relays have a fixed priority order (relay 1 has the highest priority and relay 4 the least). The system activates first the relays with highest priority and, if th epower is enough for the others, the ones with lowest priority.  
+
+-- light estimation -- 
+The estimation of the available power is performes using an exponential model (see Sensor.h)
+*/
 
 
+// ------ DEFINITIONS  ------
+
+//pins connected to the display (see Display.h)
 #define LCD_SHIFT_EN              4 
 #define LCD_SHIFT_D7              5
 #define LCD_SHIFT_SER             6
 #define LCD_SHIFT_CLK             7
 
+//display format 
 #define LCD_FORMAT_ROWS           2
 #define LCD_FORMAT_COLS           20
 #define LCD_MAX_COLS              38
-#define SETTINGS_ADDRESS          10
 
+//settings EEPROM base address
+#define SETTINGS_ADDRESS          0
+
+//Sensor pin and constants 
 #define PHOTO_PIN                 A0
 #define SENSOR_ALPHA_DELTA        0.1
 #define SENSOR_BETA_DELTA         0.1
 
+//Button pins 
 #define SELECT_BUTTON             2
 #define MINUS_BUTTON              8
 #define PLUS_BUTTON               9
 
+//Relay pins 
 #define RELAY1_PIN                1
 #define RELAY2_PIN                0
 #define RELAY3_PIN                11  
 #define RELAY4_PIN                10
 
+//Interface options (values are in microseconds) 
 #define DISPLAY_REFRESH_RATE      100000
 #define BUTTON_RESOLUTION         2000000
 #define BUTTON_FAST_RESOLUTION    100000
 
-typedef enum {CONTROL,MINUS,PLUS,NONE} button;
+//button status enum 
+typedef enum {
+  CONTROL,
+  MINUS,
+  PLUS,
+  NONE
+} button;
+
+//current view enum 
 typedef enum {
   GENERAL,
   SETTINGS_POWER,
@@ -46,17 +106,18 @@ typedef enum {
   SETTINGS_SENSOR
 } view;
 
-Display* screen;
-Settings* options;
-Sensor* light;
-Relays* counters;
+//global variables  
+Display* screen;   //display object 
+Settings* options; //settings object 
+Sensor* light;     //sensor object 
+Relays* counters;  //conters object 
 
-view currentView;
-bool blinkStatus;
-unsigned int secondCounter;
-unsigned int buttonCounter;
-unsigned short currentSubView;
-button lastButton;
+view currentView;                //contains the current menu 
+bool blinkStatus;                //used for blinking arrows near the relay status in the main menu 
+unsigned int secondCounter;      //used for counting a second from the display interrupts from TimerOne 
+unsigned int buttonCounter;      //used for managing the button polling rate 
+unsigned short currentSubView;   //sub view used in the menu 
+button lastButton;               //last valid button readed  
 
 void update();
 void loop() {}
@@ -64,6 +125,7 @@ void loop() {}
 void setup() {
   noInterrupts(); 
 
+  //Pin mode init 
   pinMode(SELECT_BUTTON, INPUT);
   pinMode(MINUS_BUTTON, INPUT);
   pinMode(PLUS_BUTTON, INPUT);
@@ -73,6 +135,7 @@ void setup() {
   pinMode(RELAY3_PIN, OUTPUT);
   pinMode(RELAY4_PIN, OUTPUT);
 
+  //first deactivation of the relays 
   digitalWrite(RELAY1_PIN, true);
   digitalWrite(RELAY2_PIN, true);
   digitalWrite(RELAY3_PIN, true);
@@ -80,6 +143,8 @@ void setup() {
   lastButton=NONE;
   currentView=GENERAL;
   blinkStatus=false;
+
+  //the second counter is setted to match exactly one second in base of the display interrupts 
   secondCounter=1000000/DISPLAY_REFRESH_RATE;
   buttonCounter=BUTTON_RESOLUTION/DISPLAY_REFRESH_RATE;
 
@@ -88,6 +153,7 @@ void setup() {
   counters=new Relays(4);
   
   if(!options->loadSaved(SETTINGS_ADDRESS)) {
+    //If the settings saved in the EEPROM are not valid, prints an error on the display 
     screen->clear();
     screen->write(0,0,"Impostazioni non");
     screen->write(1,0,"valide");
@@ -99,46 +165,62 @@ void setup() {
   }
   light=new Sensor(PHOTO_PIN,options->getAlpha(),options->getBeta());
  
+  //interrupt intialization (display refresh rate)
   Timer1.initialize((DISPLAY_REFRESH_RATE/2));
   Timer1.attachInterrupt(update);
 
   interrupts(); 
 }
 
+//timerOne interrupt (display refresh and control system)
 void update() {
+  //gets the current available light 
   unsigned int currentPower=light->getCurrentPower();
   
+  //If one second is elapsed, check the counter status for updating the relays, otherwise the second counter is decremented. 
   if (secondCounter>0) {
     secondCounter--;
   } else {
+    //secondCounter reset 
     secondCounter=1000000/DISPLAY_REFRESH_RATE;
+    
+    //blink arrow update and counter step 
     blinkStatus=!blinkStatus;
     counters->updateStatus();
 
+    //the currentPower value is substracted with the power of the loads to estimate which relay should be modified 
+    //(the priority is managed by modifying the leftPowr variable before considering the next relay)
     int leftPower=currentPower;
     for (int l=0;l<LOADS_NUMBER;l++) {
+      //if the relay is not masked, leftPower is substracted with the power used by the load
       if (!options->getMask(l)) {
         leftPower-=options->getPower(l);
         switch (counters->getDirection(l)) {
           case STOP:
+            //if relay is turning off but there is enough light -> the relay is maintained on 
             if (leftPower>0) counters->setCount(l,0,ON);
           break;
           case START:
+            //if the relay is turning on but there is not enough light -> the relay is maintained off 
             if (leftPower<0) counters->setCount(l,0,OFF);
           break;
           case ON:
+            //if the relay is on but there is not enough light -> the relay counter is started to deactivate the relay 
             if (leftPower<0) counters->setCount(l,options->getTimerOff(),STOP);
           break;
           case OFF:
+            //if the relay is off but there is enough light -> the relay counter is started to activate the relay 
             if (leftPower>0) counters->setCount(l,options->getTimerOn(),START);
           break;
         }
       } else {
+        //if the device is masked, its priority is ignored and the relay remains off.
         counters->setCount(l,0,OFF);
       }
       counters->clearFlag(l);
     }
-
+    
+    // actual pin update 
     if (counters->getDirection(0)==START || counters->getDirection(0)==OFF) digitalWrite(RELAY1_PIN,true);
     else digitalWrite(RELAY1_PIN,false);
     if (counters->getDirection(1)==START || counters->getDirection(1)==OFF) digitalWrite(RELAY2_PIN,true);
@@ -150,21 +232,27 @@ void update() {
 
   }
 
+  /* button debouncing system with dynamic resolution */ 
+
   button detectedButton=NONE;
   button pressedButton=NONE;
   if (!digitalRead(PLUS_BUTTON)) pressedButton=PLUS;
   if (!digitalRead(MINUS_BUTTON)) pressedButton=MINUS;
   if (!digitalRead(SELECT_BUTTON)) pressedButton=CONTROL;
   
+  //if the button is pressed and the button counter is off, the cutton counter is setted. 
   if (buttonCounter==0 || pressedButton != lastButton) {
+    //if the last valid button is equal to the pressed one, the polling rate is increased 
     if (lastButton!=pressedButton) buttonCounter=BUTTON_RESOLUTION/DISPLAY_REFRESH_RATE;
     else buttonCounter=BUTTON_FAST_RESOLUTION/DISPLAY_REFRESH_RATE;
     lastButton=pressedButton;
   } else {
+    //if the button counter is not zero, the variable is decremented. 
     pressedButton=NONE; 
     buttonCounter--;
   }
-   
+  
+  /* interface management */ 
   switch (currentView) {
     case GENERAL:
       if (pressedButton==PLUS) currentSubView++;
