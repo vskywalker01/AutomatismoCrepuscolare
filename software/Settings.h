@@ -24,7 +24,7 @@ typedef struct SettingsValues{
 
     float alpha; 
     float beta; 
-
+    float gamma;
 } SettingsValues;
 
 class Settings {
@@ -42,10 +42,12 @@ class Settings {
     void setTimerOff(unsigned int value);
     void setMask(unsigned int load, bool value);
     void setAlpha(float alpha);
-    void setBeta(float beta); 
+    void setBeta(float beta);
+    void setGamma(float gamma);
 
     float getAlpha();
     float getBeta();
+    float getGamma();
     unsigned int getPower(unsigned int load);
     unsigned int getTimerOn();
     unsigned int getTimerOff();

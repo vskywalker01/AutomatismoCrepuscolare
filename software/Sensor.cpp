@@ -1,10 +1,11 @@
 #include "Arduino.h"
 #include "Sensor.h"
 
-Sensor::Sensor(int pin, float alpha, float beta) {
+Sensor::Sensor(int pin, float alpha, float beta, float gamma) {
     sensorPin=pin;
     a=alpha;
     b=beta;
+    g=gamma;
     p=0;
 
     //Initializing sample array with 0
@@ -20,7 +21,7 @@ unsigned int Sensor::getCurrentPower() {
         value+=sensorSamples[i];
     }
     //returning the power from the function. 
-    return (unsigned int) (a*pow(value,b));
+    return (unsigned int) (a*pow(value-g,b));
 }
 
 float Sensor::getAlpha() {
@@ -29,12 +30,21 @@ float Sensor::getAlpha() {
 
 float Sensor::getBeta() {
     return b;
-} 
+}
+
+float Sensor::getGamma() {
+    return g;
+}
+
 void Sensor::setAlpha(float alpha) {
     a=alpha; 
 }
 void Sensor::setBeta(float beta) {
     b=beta;
+}
+
+void Sensor::setGamma(float gamma) {
+    g=gamma;
 }
 
 unsigned int Sensor::getCurrentValue() {

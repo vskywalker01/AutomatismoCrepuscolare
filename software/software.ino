@@ -65,12 +65,13 @@ The estimation of the available power is performes using an exponential model (s
 #define LCD_MAX_COLS              38
 
 //settings EEPROM base address
-#define SETTINGS_ADDRESS          0x01
+#define SETTINGS_ADDRESS          0x00
 
 //Sensor pin and constants 
 #define PHOTO_PIN                 A0
-#define SENSOR_ALPHA_DELTA        0.1
+#define SENSOR_ALPHA_DELTA        0.01
 #define SENSOR_BETA_DELTA         0.1
+#define SENSOR_GAMMA_DELTA        10
 #define POWER_DELTA               10
 //Button pins 
 #define SELECT_BUTTON             2
@@ -163,7 +164,7 @@ void setup() {
     noInterrupts();
     screen->clear();
   }
-  light=new Sensor(PHOTO_PIN,options->getAlpha(),options->getBeta());
+  light=new Sensor(PHOTO_PIN,options->getAlpha(),options->getBeta(),options->getGamma());
  
   //interrupt intialization (display refresh rate)
   Timer1.initialize((DISPLAY_REFRESH_RATE/2));
@@ -266,7 +267,8 @@ void update() {
       if (currentSubView==0) {
         screen->write(0,0,"Sole:                ");
         screen->write(0,6,String(light->getCurrentValue())+"     ");
-        screen->write(0,12,String((char) 0b00010000)+String(light->getCurrentPower())+"W   ");
+        screen->write(0,11,String((char) 0b00010000)+" ");
+        screen->write(0,13,String(light->getCurrentPower())+"W   ");
         for (unsigned int l=0;l<LOADS_NUMBER ;l++) {
           switch (counters->getDirection(l)) {
             case ON:
@@ -462,6 +464,12 @@ void update() {
             case 2: 
                 options->setBeta(options->getBeta()+SENSOR_BETA_DELTA);
                 light->setBeta(options->getBeta());
+            
+            case 3: 
+                options->setGamma(options->getGamma()+SENSOR_GAMMA_DELTA);
+                light->setGamma(options->getGamma());
+
+
             default: 
             break;
           }
@@ -479,6 +487,11 @@ void update() {
             case 2: 
                 options->setBeta(options->getBeta()-SENSOR_BETA_DELTA);
                 light->setBeta(options->getBeta());
+            
+            case 3: 
+                options->setGamma(options->getGamma()-SENSOR_GAMMA_DELTA);
+                light->setGamma(options->getGamma());
+
             default: 
             break;
           }  
@@ -486,7 +499,7 @@ void update() {
 
         case CONTROL:
           if (currentSubView>0) {
-            if (currentSubView>=2) {
+            if (currentSubView>=3) {
               currentSubView=0;
               currentView=SETTINGS_TIMERON;
             }
@@ -516,7 +529,11 @@ void update() {
           screen->write(1,0,String((char) 0b00111110)+"                   ");
           screen->write(1,2,String(options->getBeta()));
         break;
-
+        
+        case 3: 
+          screen->write(0,0,"Gamma                ");
+          screen->write(1,0,String((char) 0b00111110)+"                   ");
+          screen->write(1,2,String(options->getGamma()));
         default: 
         break;
       }

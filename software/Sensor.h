@@ -19,7 +19,7 @@ class Sensor {
     //Values used for the sample fitting 
     float a;                                 
     float b;
-    
+    float g;    
     // recorded samples array and pointer 
     unsigned int sensorSamples[SAMPLES]; 
     unsigned int p; 
@@ -31,7 +31,7 @@ class Sensor {
      * alpha    ->  alpha value used for the fitting function 
      * beta     ->  beta value used for the fitting function 
      */
-    Sensor(int pin,float alpha,float beta);
+    Sensor(int pin,float alpha,float beta, float gamma);
 
     /* getCurrentPower() returns the usable power from the average of samples collected using getCurrentValue(). 
      * It uses an exponential funciton based on alpha and beta values, where alpha is a multiplicative factor and beta is the exponent factor. 
@@ -44,9 +44,12 @@ class Sensor {
     
     /* function used for setting and getting the function parameters */ 
     float getAlpha();
-    float getBeta(); 
+    float getBeta();
+    float getGamma();
+
     void setAlpha(float alpha);
     void setBeta(float beta);
+    void setGamma(float gamma);
 };
 
 #endif 
