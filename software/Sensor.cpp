@@ -15,13 +15,13 @@ Sensor::Sensor(int pin, float alpha, float beta, float gamma) {
 }
 
 unsigned int Sensor::getCurrentPower() {
-    //processing the average 
-    unsigned int value=0;
-    for (unsigned int i=0;i<SAMPLES;i++) {
-        value+=sensorSamples[i];
-    }
     //returning the power from the function. 
-    return (unsigned int) (a*pow(value-g,b));
+    return (unsigned int) (a*pow(((float)getCurrentValue())-g,b));
+}
+
+void Sensor::readSample() {
+    sensorSamples[p++]=analogRead(sensorPin);
+    p=p%SAMPLES;
 }
 
 float Sensor::getAlpha() {
@@ -48,10 +48,6 @@ void Sensor::setGamma(float gamma) {
 }
 
 unsigned int Sensor::getCurrentValue() {
-    //updating the last values 
-    sensorSamples[p++]=analogRead(sensorPin);
-    p=p%SAMPLES;
-
     //processing the average
     unsigned int value=0;
     for (unsigned int i=0;i<SAMPLES;i++) {

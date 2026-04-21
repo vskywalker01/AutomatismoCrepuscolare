@@ -32,7 +32,7 @@ class Sensor {
      * beta     ->  beta value used for the fitting function 
      */
     Sensor(int pin,float alpha,float beta, float gamma);
-
+    void readSample(); 
     /* getCurrentPower() returns the usable power from the average of samples collected using getCurrentValue(). 
      * It uses an exponential funciton based on alpha and beta values, where alpha is a multiplicative factor and beta is the exponent factor. 
      * Power = a * (samples)^b 

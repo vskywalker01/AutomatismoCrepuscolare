@@ -176,8 +176,9 @@ void setup() {
 //timerOne interrupt (display refresh and control system)
 void update() {
   //gets the current available light 
+  light->readSample();
   unsigned int currentPower=light->getCurrentPower();
-  
+  unsigned int currentLight=light->getCurrentValue(); 
   //If one second is elapsed, check the counter status for updating the relays, otherwise the second counter is decremented. 
   if (secondCounter>0) {
     secondCounter--;
@@ -266,9 +267,9 @@ void update() {
       }
       if (currentSubView==0) {
         screen->write(0,0,"Sole:                ");
-        screen->write(0,6,String(light->getCurrentValue())+"     ");
+        screen->write(0,6,String(currentLight)+"     ");
         screen->write(0,11,String((char) 0b00010000)+" ");
-        screen->write(0,13,String(light->getCurrentPower())+"W   ");
+        screen->write(0,13,String(currentPower)+"W   ");
         for (unsigned int l=0;l<LOADS_NUMBER ;l++) {
           switch (counters->getDirection(l)) {
             case ON:
