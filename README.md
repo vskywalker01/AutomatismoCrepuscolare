@@ -7,3 +7,22 @@ In base of a fixed priority order, the controller turns on and off the relays so
 
 <img width="322" height="381" align="center" alt="schematic" src="https://github.com/user-attachments/assets/2def72c3-0a4f-4ce9-832c-5d227f79d7b1" />
 
+## Hardware 
+The folder [*pcb*](pcb/) contains the Kicad project of the PCB. the required components are shown in the following table. 
+
+| Name  | Value | Quantity |
+| ------------- | ------------- | ------------- |
+| Arduino Pro mini   |              | x1 |
+| LCD Display 16x2   |              | x1 |
+| 74LS595            |              | x1 | 
+| Relay              | 12V to 24V   | x4 |
+| LM7805             |              | x1 | 
+| BC237              |              |    |
+
+- One Arduino Pro Mini with AtMega328p. 
+- Four 12V/24V relays
+- One 16x2 LCD display, 
+- One 74ls595 shift register
+- One photo-resistor
+- Three buttons
+- 
