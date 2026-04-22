@@ -196,23 +196,29 @@ void update() {
     for (int l=0;l<LOADS_NUMBER;l++) {
       //if the relay is not masked, leftPower is substracted with the power used by the load
       if (!options->getMask(l)) {
-        leftPower-=options->getPower(l);
+         
         switch (counters->getDirection(l)) {
           case STOP:
             //if relay is turning off but there is enough light -> the relay is maintained on 
-            if (leftPower>0) counters->setCount(l,0,ON);
+            if (leftPower >= options->getPower(l)) {
+              leftPower-=options->getPower(l);
+              counters->setCount(l,0,ON);
+            }
           break;
           case START:
             //if the relay is turning on but there is not enough light -> the relay is maintained off 
-            if (leftPower<0) counters->setCount(l,0,OFF);
+            if (leftPower < options->getPower(l)) counters->setCount(l,0,OFF);
           break;
           case ON:
             //if the relay is on but there is not enough light -> the relay counter is started to deactivate the relay 
-            if (leftPower<0) counters->setCount(l,options->getTimerOff(),STOP);
+            if (leftPower < options->getPower(l)) counters->setCount(l,options->getTimerOff(),STOP);
           break;
           case OFF:
             //if the relay is off but there is enough light -> the relay counter is started to activate the relay 
-            if (leftPower>0) counters->setCount(l,options->getTimerOn(),START);
+            if (leftPower >= options->getPower(l)) {
+              leftPower-=options->getPower(l);
+              counters->setCount(l,options->getTimerOn(),START);
+            }
           break;
         }
       } else {
@@ -343,6 +349,9 @@ void update() {
       }
     break;
     case SETTINGS_MASK:
+      //Mask setting view:
+      //If the current view = 0 -> the user can select to skip this setting with CONTROL or enter in the menu with PLUS/MINUS 
+      //If the current view > 0 -> the user activate the relay's mask with PLUS, deactivate with MINUS or change the view to the next relay ID with CONTROL 
       switch (pressedButton) {
         case PLUS:
           if (currentSubView==0) currentSubView=1;
@@ -369,6 +378,7 @@ void update() {
           }
         break;
       }
+      
       if (currentSubView==0) {
         screen->write(0,0,"Maschere            ");
         screen->write(1,0,"                    ");
@@ -385,6 +395,10 @@ void update() {
     break;
 
     case SETTINGS_POWER:
+      //power setting view:
+      //If the current view = 0 -> the user can select to skip this setting with CONTROL or enter in the menu with PLUS/MINUS 
+      //If the current view > 0 -> the user can adjust the power consumption of the load attached to the relay with PLUS and MINUS or change the view to the next relay ID with CONTROL 
+
       switch (pressedButton) {
         case PLUS:
           if (currentSubView==0) currentSubView=1;
@@ -421,6 +435,9 @@ void update() {
       }
     break;
 
+    //Timer on setting view:
+    //the user can adjust the START timer of all relays mask with PLUS and MINUS or change the view to the next setting with CONTROL 
+
     case SETTINGS_TIMERON:
       switch (pressedButton) {
         case PLUS:
@@ -441,6 +458,7 @@ void update() {
     
     break;
 
+    //the user can adjust the STOP timer of all relays mask with PLUS and MINUS or change the view to the next setting with CONTROL
     case SETTINGS_TIMEROFF:
       switch (pressedButton) {
         case PLUS:
@@ -464,6 +482,11 @@ void update() {
       screen->write(1,2,String(options->getTimerOff())+"    ");
     
     break;
+    
+    //sensor calibration view:
+      //If the current view = 0 -> the user can select to skip this setting with CONTROL or enter in the menu with PLUS/MINUS 
+      //If the current view > 0 -> the user can adjust the current coefficient for the sensor power conversion with PLUS and MINUS or change the view to the next one with CONTROL 
+
     case SETTINGS_SENSOR:
       switch (pressedButton) {
         case PLUS:
@@ -526,6 +549,8 @@ void update() {
           }
         break;
       }
+       
+      
       switch (currentSubView) {
         case 0: 
           screen->write(0,0,"Calibrazione sensore");
@@ -557,5 +582,7 @@ void update() {
       currentView=GENERAL;
     break;
   }
+
+  //Sending the text buffer to the display 
   screen->update();
 }
